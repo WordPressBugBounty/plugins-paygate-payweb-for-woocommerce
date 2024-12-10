@@ -1,14 +1,15 @@
 <?php
+
 /**
  * Plugin Name: Paygate for WooCommerce
  * Plugin URI: https://github.com/PayGate/PayWeb_WooCommerce
  * Description: Receive payments using the South African Paygate payments provider.
  * Author: Payfast (Pty) Ltd
  * Author URI: https://payfast.io/
- * Version: 1.4.9
+ * Version: 1.5.0
  * Requires at least: 5.6
- * Tested up to: 6.6.2
- * WC tested up to: 9.3.2
+ * Tested up to: 6.7.0
+ * WC tested up to: 9.4.1
  * WC requires at least: 6.0
  * Requires PHP: 8.0
  *
@@ -20,7 +21,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: paygate-payweb-for-woocommerce
  */
-
+require_once "vendor/autoload.php";
 add_action('plugins_loaded', 'woocommerce_paygate_init', 0);
 
 /**
@@ -31,17 +32,26 @@ add_action('plugins_loaded', 'woocommerce_paygate_init', 0);
  */
 
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
+
 add_action('woocommerce_receipt_paygate', 'custom_function_after_order_placed', 10, 1);
 
-function custom_function_after_order_placed($order_id) {
+add_action(
+    'woocommerce_receipt_paygate',
+    array(WC_Gateway_PayGate::class, 'receipt_page'),
+    99
+);
+
+function custom_function_after_order_placed($order_id)
+{
     wp_enqueue_script(
         'classic-checkout',
-        plugins_url( 'assets-classic/js/classic-checkout.js', __FILE__ ),
+        plugins_url('assets-classic/js/classic-checkout.js', __FILE__),
         array(),
-        '1.4.9',
+        '1.5.0',
         true
     );
 }
+
 function woocommerce_paygate_init()
 {
     if (!class_exists('WC_Payment_Gateway')) {

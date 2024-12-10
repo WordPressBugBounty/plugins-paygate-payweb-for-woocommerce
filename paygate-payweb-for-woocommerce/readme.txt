@@ -2,9 +2,9 @@
 Contributors: appinlet
 Tags: ecommerce, e-commerce, woocommerce, automattic, payment, paygate, app inlet, credit card, payment request
 Requires at least: 5.6
-Tested up to: 6.6.2
+Tested up to: 6.7.0
 Requires PHP: 8.0
-Stable tag: 1.4.9
+Stable tag: 1.5.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -43,6 +43,13 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
 4. WooCommerce Admin Paygate Additional Settings continued
 
 == Changelog ==
+= 1.5.0 - 2024-12-10 =
+ *  Integration with the Payfast common library for streamlined payment processing.
+ *  Full compatibility with PHP 8.2, ensuring optimal performance on the latest platform version.
+ *  Enhanced code quality through refactoring and adherence to modern coding standards.
+ *  Fixed initiate_transaction method firing more than once.
+ *  Tested on WooCommerce 9.4.1 and WordPress 6.7.
+
 = 1.4.9 - 2024-10-08 =
  * Tested on WooCommerce 9.3.2, PHP 8.1 and WordPress 6.6.2.
  * Fix inline script blocking redirect to pay page.
@@ -62,9 +69,16 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
  * Fix multi-domain multisite network activation.
  * Fix invalid checksum message if order is already paid.
 
-[See changelog for all versions](https://raw.githubusercontent.com/PayGate/PayWeb_WooCommerce/master/changelog.txt).
+[See changelog for all versions](https://raw.githubusercontent.com/PayGate/PayWeb_WooCommerce/master/CHANGELOG.md).
 
 == Upgrade Notice ==
+= 1.5.0 - 2024-12-10 =
+ *  Integration with the Payfast common library for streamlined payment processing.
+ *  Full compatibility with PHP 8.2, ensuring optimal performance on the latest platform version.
+ *  Enhanced code quality through refactoring and adherence to modern coding standards.
+ *  Fixed initiate_transaction method firing more than once.
+ *  Tested on WooCommerce 9.4.1 and WordPress 6.7.
+
 = 1.4.9 - 2024-10-08 =
  * Tested on WooCommerce 9.3.2, PHP 8.1 and WordPress 6.6.2.
  * Fix inline script blocking redirect to pay page.
@@ -72,10 +86,3 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
 = 1.4.8 - 2024-05-28 =
  * Tested on WooCommerce 8.9.1, PHP 8.1 and WordPress 6.5.3.
  * Fix payment types compatibility.
-
-= 1.4.7 - 2023-11-22 =
- * Tested on WooCommerce 8.3.1, PHP 8.0 and WordPress 6.4.1.
- * Add support for HPOS and Blocks.
- * Add Apple Pay, Samsung Pay and RCS Payment Types.
- * Other fixes and improvements.
-

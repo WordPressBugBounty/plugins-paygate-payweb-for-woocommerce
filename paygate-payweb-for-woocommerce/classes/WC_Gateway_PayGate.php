@@ -137,13 +137,9 @@ class WC_Gateway_PayGate extends WC_Payment_Gateway
     const ORDER_META_REFERENCE_PLACEHOLDER    = 'Add order meta to the payment reference using a meta key (e.g. _billing_first_name)';
     const LOGGING                             = 'logging';
 
-    public $version = '1.4.9';
+    public $version = '1.5.0';
 
     public $id = 'paygate';
-
-    protected $initiate_url = 'https://secure.paygate.co.za/payweb3/initiate.trans';
-    protected $process_url = 'https://secure.paygate.co.za/payweb3/process.trans';
-    protected $query_url = 'https://secure.paygate.co.za/payweb3/query.trans';
 
     protected $merchant_id = self::TEST_PAYGATE_ID;
     protected $encryption_key = self::TEST_ENCRYPTION_KEY;
@@ -159,6 +155,8 @@ class WC_Gateway_PayGate extends WC_Payment_Gateway
 
     protected $msg;
     protected $post;
+
+    protected $plugin_url;
 
     protected $paywebStatus = [
         0 => 'Not Done',
@@ -967,9 +965,9 @@ HTML;
         );
         wp_register_script(
             'classic-checkout',
-            plugins_url( '../assets-classic/js/classic-checkout.js', __FILE__ ),
-            array( 'jquery'),
-            '1.4.9',
+            plugins_url('../assets-classic/js/classic-checkout.js', __FILE__),
+            array('jquery'),
+            '1.5.0',
             true
         );
     }
@@ -1001,7 +999,7 @@ HTML;
      *
      * @since 1.0.0
      */
-    public function receipt_page($order_id)
+    public static function receipt_page($order_id)
     {
         $receipt = new WC_Gateway_PayGate_Portal();
         // Do redirect
@@ -1025,7 +1023,7 @@ HTML;
             ]
         );
 
-        echo wp_kses($receipt->generate_paygate_form($order_id), $allowed_tags);
+        echo wp_kses($receipt->getRedirectHTML($order_id), $allowed_tags);
     }
 
     /**
@@ -1231,14 +1229,6 @@ HTML;
             );
         }
 
-        add_action(
-            'woocommerce_receipt_paygate',
-            array(
-                $this,
-                'receipt_page',
-            ),
-            99
-        );
 
         add_action('wp_ajax_order_pay_payment', array($this, 'process_review_payment'));
         add_action('wp_ajax_nopriv_order_pay_payment', array($this, 'process_review_payment'));

@@ -7,6 +7,8 @@
  * Released under the GNU General Public License
  */
 
+use Payfast\PayfastCommon\Gateway\Request\PaymentRequest;
+
 class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
 {
     protected $error_desc = 'Checksum validation error.';
@@ -44,12 +46,11 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
         // Construct variables for post
         $order_total        = $order->get_total();
         $this->data_to_send = array(
-            self::PAYGATE_ID   => $this->merchant_id,
             self::REFERENCE    => $reference,
             'AMOUNT'           => number_format($order_total, 2, '', ''),
             'CURRENCY'         => $order->get_currency(),
             'RETURN_URL'       => $this->redirect_url . '&gid=' . $order_id,
-            'TRANSACTION_DATE' => date('Y-m-d H:m:s'),
+            'TRANSACTION_DATE' => (new \DateTime())->format('Y-m-d H:i:s'),
             'LOCALE'           => 'en-za',
             'COUNTRY'          => 'ZAF',
             'EMAIL'            => $order->get_billing_email(),
@@ -57,9 +58,7 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
 
         $vaultableMethod = $this->setVaultableMethod();
 
-        if ($this->settings[self::DISABLENOTIFY] != 'yes') {
-            $this->data_to_send['NOTIFY_URL'] = $this->notify_url;
-        }
+        $this->checkNotifyIpn();
 
         $this->data_to_send['USER3'] = 'woocommerce-v' . $this->version;
 
@@ -103,41 +102,23 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
             }
         }
 
-        $this->data_to_send[self::CHECKSUM] = md5(implode('', $this->data_to_send) . $this->encryption_key);
 
-        $this->initiate_response = wp_remote_post(
-            $this->initiate_url,
-            array(
-                self::METHOD      => 'POST',
-                'body'            => $this->data_to_send,
-                self::TIMEOUT     => 70,
-                self::SSLVERIFY   => true,
-                self::USER_AGENT  => 'WooCommerce',
-                self::HTTPVERSION => '1.1',
-            )
-        );
-
-        if (is_wp_error($this->initiate_response)) {
-            return $this->initiate_response;
+        try {
+            $payweb   = new PaymentRequest($this->merchant_id, $this->encryption_key);
+            $response = $payweb->initiate($this->data_to_send);
+        } catch (Exceptione $e) {
+            echo 'Error initiating transaction: ' . $e->getMessage();
         }
 
-        parse_str($this->initiate_response['body'], $parsed_response);
+        parse_str($response, $parsed_response);
 
-        if (empty($this->initiate_response['body']) || array_key_exists(
+        if (empty($response) || array_key_exists(
                 'ERROR',
                 $parsed_response
             ) || !array_key_exists(self::PAY_REQUEST_ID, $parsed_response)) {
             $this->msg[self::WC_CLASS] = 'woocommerce-error';
             $this->msg[self::MESSAGE]  = "Thank you for shopping with us. However, we were unable to initiate your payment. Please try again.";
-            if (!$order->has_status(self::FAILED)) {
-                $order->add_order_note(
-                    'Response from initiating payment:' . print_r(
-                        $this->data_to_send,
-                        true
-                    ) . ' ' . $this->initiate_response['body']
-                );
-                $order->update_status(self::FAILED);
-            }
+            $this->isOrderFailed($order, $response);
 
             return new WP_Error(
                 'paygate-error',
@@ -157,7 +138,7 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
             }
         }
 
-        $this->initiate_response['body'] = $parsed_response;
+        $this->initiate_response = $parsed_response;
 
         // Add order note with the PAY_REQUEST_ID for custom query
         $order->add_order_note(
@@ -181,10 +162,15 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
      * @since 1.0.0
      *
      */
-    public function generate_paygate_form($order_id)
+    public function getRedirectHTML($order_id)
     {
-        $order           = new WC_Order($order_id);
-        $parsed_response = $this->initiate_transaction($order_id);
+        $parsed_response = '';
+        try {
+            $payweb          = new PaymentRequest($this->merchant_id, $this->encryption_key);
+            $parsed_response = $this->initiate_transaction($order_id);
+        } catch (Exception $e) {
+            echo 'Error initiating transaction: ' . $e->getMessage();
+        }
 
         if ($this->settings[self::ALTERNATECARTHANDLING] == 'yes') {
             WC()->cart->empty_cart();
@@ -193,15 +179,9 @@ class WC_Gateway_PayGate_Portal extends WC_Gateway_PayGate
         if (!is_wp_error($parsed_response)) {
             unset($parsed_response[self::CHECKSUM]);
             $checksum       = esc_attr(md5(implode('', $parsed_response) . $this->encryption_key));
-            $process_url    = esc_url($this->process_url);
             $pay_request_id = esc_attr($parsed_response[self::PAY_REQUEST_ID]);
 
-            return <<<HTML
-<form action="{$process_url}" method="post" id="paygate_payment_form">
-    <input name="PAY_REQUEST_ID" type="hidden" value="{$pay_request_id}" />
-    <input name="CHECKSUM" type="hidden" value="{$checksum}" />
-</form>
-HTML;
+            echo $payweb->getRedirectHTML($pay_request_id, $checksum);
         } else {
             echo esc_html($parsed_response->get_error_message());
         }
@@ -252,38 +232,26 @@ HTML;
 
         $reference = $this->getOrderReference($order);
 
-        $fields                 = array(
-            self::PAYGATE_ID     => $this->merchant_id,
-            self::PAY_REQUEST_ID => $post[self::PAY_REQUEST_ID],
-            self::REFERENCE      => $reference,
-        );
-        $fields[self::CHECKSUM] = md5(implode('', $fields) . $this->encryption_key);
+        try {
+            $payweb   = new PaymentRequest($this->merchant_id, $this->encryption_key);
+            $response = $payweb->query($post[self::PAY_REQUEST_ID], $reference);
 
-        $response = wp_remote_post(
-            $this->query_url,
-            array(
-                self::METHOD      => 'POST',
-                'body'            => $fields,
-                self::TIMEOUT     => 70,
-                self::SSLVERIFY   => true,
-                self::USER_AGENT  => 'WooCommerce/' . WC_VERSION,
-                self::HTTPVERSION => '1.1',
-            )
-        );
+            parse_str($response, $parsed_response);
 
-        parse_str($response['body'], $parsed_response);
+            if ((int)$status === 1) {
+                $this->vaultCard($parsed_response, $customer_id);
+            }
 
-        if ((int)$status === 1) {
-            $this->vaultCard($parsed_response, $customer_id);
+            $transaction_id = isset($parsed_response[self::TRANSACTION_ID]) ? $parsed_response[self::TRANSACTION_ID] : "";
+            $result_desc    = isset($parsed_response[self::RESULT_DESC]) ? $parsed_response[self::RESULT_DESC] : "";
+
+            // Get latest order in case notify has updated first
+            $order = wc_get_order($order_id);
+
+            $this->processOrderFinal($status, $order, $transaction_id, $result_desc, $pay_request_id);
+        } catch (Exception $e) {
+            echo 'Error during PayWeb query: ' . $e->getMessage();
         }
-
-        $transaction_id = isset($parsed_response[self::TRANSACTION_ID]) ? $parsed_response[self::TRANSACTION_ID] : "";
-        $result_desc    = isset($parsed_response[self::RESULT_DESC]) ? $parsed_response[self::RESULT_DESC] : "";
-
-        // Get latest order in case notify has updated first
-        $order = wc_get_order($order_id);
-
-        $this->processOrderFinal($status, $order, $transaction_id, $result_desc, $pay_request_id);
     }
 
     /**
@@ -395,28 +363,17 @@ HTML;
     {
         $reference = $this->getOrderReference($order);
 
-        $fields                 = array(
-            self::PAYGATE_ID     => $this->merchant_id,
-            self::PAY_REQUEST_ID => $payRequestId,
-            self::REFERENCE      => $reference,
-        );
-        $fields[self::CHECKSUM] = md5(implode('', $fields) . $this->encryption_key);
+        try {
+            $payweb   = new PaymentRequest($this->merchant_id, $this->encryption_key);
+            $response = $payweb->query($payRequestId, $reference);
+            parse_str($response, $parsed_response);
 
-        $response = wp_remote_post(
-            $this->query_url,
-            array(
-                self::METHOD      => 'POST',
-                'body'            => $fields,
-                self::TIMEOUT     => 70,
-                self::SSLVERIFY   => true,
-                self::USER_AGENT  => 'WooCommerce/' . WC_VERSION,
-                self::HTTPVERSION => '1.1',
-            )
-        );
+            return $parsed_response;
+        } catch (Exception $e) {
+            echo 'Error querying transaction: ' . $e->getMessage();
 
-        parse_str($response['body'], $parsed_response);
-
-        return $parsed_response;
+            return null;
+        }
     }
 
     /**
@@ -518,6 +475,35 @@ RT;
                 WC()->cart->add_to_cart($product_id, $quantity, $variation_id, $variation);
             }
             WC()->cart->calculate_totals();
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function checkNotifyIpn(): void
+    {
+        if ($this->settings[self::DISABLENOTIFY] != 'yes') {
+            $this->data_to_send['NOTIFY_URL'] = $this->notify_url;
+        }
+    }
+
+    /**
+     * @param WC_Order $order
+     * @param string $response
+     *
+     * @return void
+     */
+    public function isOrderFailed(WC_Order $order, string $response): void
+    {
+        if (!$order->has_status(self::FAILED)) {
+            $order->add_order_note(
+                'Response from initiating payment:' . print_r(
+                    $this->data_to_send,
+                    true
+                ) . ' ' . $response
+            );
+            $order->update_status(self::FAILED);
         }
     }
 

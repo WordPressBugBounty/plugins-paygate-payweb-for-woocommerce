@@ -50,9 +50,7 @@ class WC_Gateway_PayGate_Cron extends WC_Gateway_PayGate
 
         $logging = false;
 
-        if (isset($settings[self::LOGGING]) && $settings[self::LOGGING] === 'yes') {
-            $logging = true;
-        }
+        $logging = self::isLogging($settings, $logging);
 
         $logging ? $logger->add('payweb-site-cron', 'Starting site cron job') : '';
 
@@ -64,11 +62,7 @@ class WC_Gateway_PayGate_Cron extends WC_Gateway_PayGate
 
         foreach ($orders as $order) {
             $orderId = $order->get_id();
-            try {
-                $logging ? $logger->add('payweb-site-cron', 'Order: ' . serialize($order)) : '';
-            } catch (Exception $e) {
-                $logging ? $logger->add('payweb-site-cron', 'Fatal error: ' . $e->getMessage()) : '';
-            }
+            self::isOrderValid($logging, $logger, $order);
 
             $notes = self::getOrderNotes($orderId);
 
@@ -85,17 +79,62 @@ class WC_Gateway_PayGate_Cron extends WC_Gateway_PayGate
 
             $logging ? $logger->add('payweb-site-cron', 'Response Text: ' . $responseText) : '';
 
-            if ((int)$transactionStatus === 1) {
-                if (!$order->has_status(self::PROCESSING) && !$order->has_status(self::COMPLETED)) {
-                    $order->update_status(self::PROCESSING);
-                    $responseText .= "<br>Order set to \"Processing\" by PayWeb Cron";
-                }
-            } else {
-                if (!$order->has_status(self::FAILED)) {
-                    $order->update_status(self::FAILED);
-                }
-            }
+            $responseText = self::updateOrderStatus($transactionStatus, $order, $responseText);
             $order->add_order_note('Queried by cron at ' . date('Y-m-d H:i') . '<br>Response: <br>' . $responseText);
+        }
+    }
+
+    /**
+     * @param $settings
+     * @param true $logging
+     *
+     * @return true
+     */
+    public static function isLogging($settings, bool $logging): bool
+    {
+        if (isset($settings[self::LOGGING]) && $settings[self::LOGGING] === 'yes') {
+            $logging = true;
+        }
+
+        return $logging;
+    }
+
+    /**
+     * @param string $transactionStatus
+     * @param mixed $order
+     * @param string $responseText
+     *
+     * @return string
+     */
+    public static function updateOrderStatus(string $transactionStatus, mixed $order, string $responseText): string
+    {
+        if ((int)$transactionStatus === 1) {
+            if (!$order->has_status(self::PROCESSING) && !$order->has_status(self::COMPLETED)) {
+                $order->update_status(self::PROCESSING);
+                $responseText .= "<br>Order set to \"Processing\" by PayWeb Cron";
+            }
+        } else {
+            if (!$order->has_status(self::FAILED)) {
+                $order->update_status(self::FAILED);
+            }
+        }
+
+        return $responseText;
+    }
+
+    /**
+     * @param bool $logging
+     * @param $logger
+     * @param mixed $order
+     *
+     * @return void
+     */
+    public static function isOrderValid(bool $logging, $logger, mixed $order): void
+    {
+        try {
+            $logging ? $logger->add('payweb-site-cron', 'Order: ' . serialize($order)) : '';
+        } catch (Exception $e) {
+            $logging ? $logger->add('payweb-site-cron', 'Fatal error: ' . $e->getMessage()) : '';
         }
     }
 }
