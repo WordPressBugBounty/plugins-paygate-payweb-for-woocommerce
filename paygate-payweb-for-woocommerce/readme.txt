@@ -1,10 +1,10 @@
 === Paygate for WooCommerce ===
 Contributors: appinlet
-Tags: ecommerce, e-commerce, woocommerce, automattic, payment, paygate, app inlet, credit card, payment request
-Requires at least: 5.6
-Tested up to: 6.7.0
+Tags: woocommerce, payment, paygate, ecommerce, credit card
+Requires at least: 6.0
+Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -43,6 +43,12 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
 4. WooCommerce Admin Paygate Additional Settings continued
 
 == Changelog ==
+= 1.6.0 - 2025-07-16 =
+ * Resolved a fatal error that could occur when retrieving order notes for invalid or missing orders.
+ * Updated to the Payfast Common Library v1.4.0 for improved payment processing.
+ * Tested on WooCommerce 9.9 and WordPress 6.8.
+ * Code quality and security fixes.
+
 = 1.5.0 - 2024-12-10 =
  *  Integration with the Payfast common library for streamlined payment processing.
  *  Full compatibility with PHP 8.2, ensuring optimal performance on the latest platform version.
