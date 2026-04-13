@@ -4,7 +4,7 @@ Tags: woocommerce, payment, paygate, ecommerce, credit card
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -30,7 +30,7 @@ We do recommend obtaining an SSL certificate to allow an additional layer of saf
 
 = Where can I find API documentation? =
 
-For help setting up and configuring the Payfast Gateway plugin, please refer to our [user guide](https://github.com/Payfast/woocommerce_gateway).
+For help setting up and configuring the Payfast Gateway plugin, please refer to our [user guide](https://github.com/Payfast/woocommerce-gateway).
 
 = I need some assistance. Whom can I contact? =
 
@@ -43,6 +43,9 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
 4. WooCommerce Admin Payfast Gateway Additional Settings continued
 
 == Changelog ==
+= 1.7.1 - 2026-04-13 =
+ * Fixed an issue with the Composer autoloader that could prevent the plugin from loading correctly on some setups.
+
 = 1.7.0 - 2026-01-20 =
  * Revised configuration branding to Payfast Gateway.
  * Updated branding to use the Payfast by Network logo.
@@ -80,7 +83,7 @@ Need help to configure this plugin? Feel free to connect with our Payfast Suppor
  * Fix multi-domain multisite network activation.
  * Fix invalid checksum message if order is already paid.
 
-[See changelog for all versions](https://raw.githubusercontent.com/Payfast/woocommerce_gateway/master/CHANGELOG.md).
+[See changelog for all versions](https://raw.githubusercontent.com/Payfast/woocommerce-gateway/master/CHANGELOG.md).
 
 == Upgrade Notice ==
 = 1.5.0 - 2024-12-10 =

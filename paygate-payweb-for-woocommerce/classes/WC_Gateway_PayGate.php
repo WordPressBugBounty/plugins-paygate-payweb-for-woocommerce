@@ -137,7 +137,7 @@ class WC_Gateway_PayGate extends WC_Payment_Gateway
     const ORDER_META_REFERENCE_PLACEHOLDER    = 'Add order meta to the payment reference using a meta key (e.g. _billing_first_name)';
     const LOGGING                             = 'logging';
 
-    public $version = '1.7.0';
+    public $version = '1.7.1';
 
     public $id = 'paygate';
 
@@ -1051,7 +1051,7 @@ class WC_Gateway_PayGate extends WC_Payment_Gateway
             'classic-checkout',
             plugins_url('../assets-classic/js/classic-checkout.js', __FILE__),
             array('jquery'),
-            '1.7.0',
+            '1.7.1',
             true
         );
     }

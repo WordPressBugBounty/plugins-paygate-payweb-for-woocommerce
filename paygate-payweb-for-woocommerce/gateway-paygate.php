@@ -6,10 +6,10 @@
  * Description: Receive payments using the South African Payfast Gateway payments provider.
  * Author: Payfast (Pty) Ltd
  * Author URI: https://payfast.io/
- * Version: 1.7.0
+ * Version: 1.7.1
  * Requires at least: 6.0
  * Tested up to: 6.8
- * WC tested up to: 10.2
+ * WC tested up to: 10.6
  * WC requires at least: 8.0
  * Requires PHP: 8.0
  *
@@ -21,7 +21,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: paygate-payweb-for-woocommerce
  */
-require_once "vendor/autoload.php";
+require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 add_action('plugins_loaded', 'woocommerce_paygate_init', 0);
 
 /**
@@ -47,7 +47,7 @@ function custom_function_after_order_placed($order_id)
         'classic-checkout',
         plugins_url('assets-classic/js/classic-checkout.js', __FILE__),
         array(),
-        '1.7.0',
+        '1.7.1',
         true
     );
 }
